@@ -1,0 +1,7 @@
+node_modules/
+dist/
+test/
+coverage/
+.DS_Store
+*.tgz
+.swaggerts.config.ts

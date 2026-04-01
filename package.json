@@ -1,0 +1,40 @@
+{
+  "name": "swgto",
+  "version": "0.1.0",
+  "description": "Generate API request files from OpenAPI 3.x documents.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "swgto": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts src/cli.ts --format esm --dts --watch",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "openapi",
+    "swagger",
+    "typescript",
+    "generator",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "jiti": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

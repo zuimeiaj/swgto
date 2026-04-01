@@ -18,17 +18,18 @@ function buildFunctionDoc(operation: ParsedOperation): string {
 
 export function generateTsRequestFile(operation: ParsedOperation, httpClientPath: string, typeImportPath: string): string {
   const importTypes = [
-    operation.requestTypeName,
+    ...operation.requestImportTypes,
     operation.responseTypeName,
     'RequestConfig',
   ].filter((value, index, array): value is string => Boolean(value) && array.indexOf(value) === index);
   const importLine = importTypes.length
     ? `import type { ${importTypes.join(', ')} } from ${JSON.stringify(typeImportPath)};\n`
     : '';
-  const requestArg = operation.requestTypeName ? `params: ${operation.requestTypeName}, config?: RequestConfig` : 'params?: void, config?: RequestConfig';
+  const requestArg = operation.requestTypeExpression ? `params: ${operation.requestTypeExpression}, config?: RequestConfig` : 'params?: void, config?: RequestConfig';
   const defaultResponseType = operation.responseTypeName ?? 'unknown';
+  const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length;
   const bodyLine = operation.requestBodySchema
-    ? '    data: params?.body,\n'
+    ? `    data: ${bodyOnly ? 'params' : 'params?.body'},\n`
     : '';
   const queryLine = operation.queryParams.length ? '    params: params?.query,\n' : '';
   const pathLine = operation.pathParams.length ? '    url: buildUrl(params?.path),\n' : `    url: ${JSON.stringify(operation.requestPath)},\n`;

@@ -92,7 +92,8 @@ export interface ParsedOperation {
   pathParams: OpenApiParameter[];
   requestBodySchema?: OpenApiSchema;
   responseSchema?: OpenApiSchema;
-  requestTypeName?: string;
+  requestTypeExpression?: string;
+  requestImportTypes: string[];
   responseTypeName?: string;
   fileBaseName: string;
 }

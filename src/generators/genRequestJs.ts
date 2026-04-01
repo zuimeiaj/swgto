@@ -23,10 +23,11 @@ function buildFunctionDoc(operation: ParsedOperation, typeImportPath: string, re
 }
 
 export function generateJsRequestFile(operation: ParsedOperation, httpClientPath: string, typeImportPath: string): string {
-  const requestParamType = operation.requestTypeName ?? 'void';
+  const requestParamType = operation.requestTypeExpression ?? 'void';
   const queryLine = operation.queryParams.length ? '    params: params?.query,\n' : '';
+  const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length;
   const bodyLine = operation.requestBodySchema
-    ? '    data: params?.body,\n'
+    ? `    data: ${bodyOnly ? 'params' : 'params?.body'},\n`
     : '';
   const pathLine = operation.pathParams.length ? '    url: buildUrl(params?.path),\n' : `    url: ${JSON.stringify(operation.requestPath)},\n`;
   const buildUrlHelper = operation.pathParams.length

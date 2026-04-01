@@ -1,5 +1,5 @@
 {
-  "name": "swgto",
+  "name": "swgto-ts",
   "version": "0.1.0",
   "description": "Generate API request files from OpenAPI 3.x documents.",
   "license": "MIT",

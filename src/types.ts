@@ -12,6 +12,8 @@ export interface SwaggerTsConfig {
   outputType?: OutputType;
   typeName?: string;
   cleanOutput?: boolean;
+  fileNaming?: 'module' | 'path';
+  flattenQueryParam?: boolean;
 }
 
 export interface OpenApiDocument {
@@ -77,6 +79,8 @@ export interface ResolvedConfig extends SwaggerTsConfig {
   outputDir: string;
   outputType: OutputType;
   typeName: string;
+  fileNaming: 'module' | 'path';
+  flattenQueryParam: boolean;
 }
 
 export interface ParsedOperation {

@@ -97,6 +97,12 @@ export function parsePaths(
       const hasRequestParams = queryParams.length > 0 || pathParams.length > 0 || Boolean(requestBodySchema);
       const bodyType = requestBodySchema ? schemaToTs(requestBodySchema) : undefined;
       const requestImportTypes = collectReferencedTypeNames(requestBodySchema);
+      for (const param of queryParams) {
+        requestImportTypes.push(...collectReferencedTypeNames(param.schema));
+      }
+      for (const param of pathParams) {
+        requestImportTypes.push(...collectReferencedTypeNames(param.schema));
+      }
       const pathFields = pathParams.map((param) => `${param.name}: ${schemaToTs(param.schema)};`);
       const queryFields = queryParams.map((param) => `${param.name}${param.required ? '' : '?'}: ${schemaToTs(param.schema)};`);
       const requestTypeParts: string[] = [];
@@ -110,7 +116,11 @@ export function parsePaths(
       }
 
       if (queryFields.length) {
-        requestTypeParts.push(`{ query: { ${queryFields.join(' ')} } }`);
+        if (config.flattenQueryParam && queryParams.length === 1 && queryParams[0].schema?.$ref) {
+          requestTypeParts.push(`{ query: ${schemaToTs(queryParams[0].schema)} }`);
+        } else {
+          requestTypeParts.push(`{ query: { ${queryFields.join(' ')} } }`);
+        }
       }
 
       const requestTypeExpression = hasRequestParams ? requestTypeParts.join(' & ') || 'unknown' : undefined;

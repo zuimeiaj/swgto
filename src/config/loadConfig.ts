@@ -47,6 +47,8 @@ export async function loadConfig(cwd: string): Promise<{ configPath: string; con
     outputType: rawConfig.outputType ?? 'ts',
     typeName: rawConfig.typeName ?? 'types',
     cleanOutput: rawConfig.cleanOutput ?? false,
+    fileNaming: rawConfig.fileNaming ?? 'path',
+    flattenQueryParam: rawConfig.flattenQueryParam ?? false,
   }
 
   return { configPath, config }

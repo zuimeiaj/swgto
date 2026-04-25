@@ -11,5 +11,11 @@ export async function writeTextFile(filePath: string, content: string): Promise<
 }
 
 export async function removeDir(dirPath: string): Promise<void> {
-  await rm(dirPath, { recursive: true, force: true });
+  try {
+    await rm(dirPath, { recursive: true, force: true });
+  } catch {
+    // Windows may hold file locks briefly; retry once
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await rm(dirPath, { recursive: true, force: true });
+  }
 }

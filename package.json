@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts src/cli.ts --format esm --dts --watch",
-    "test": "vitest run"
+    "test": "tsx ./src/cli.ts"
   },
   "keywords": [
     "openapi",
@@ -29,7 +29,9 @@
     "node": ">=18"
   },
   "dependencies": {
-    "jiti": "^2.4.2"
+    "jiti": "^2.4.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",

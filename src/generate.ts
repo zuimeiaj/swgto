@@ -1,11 +1,12 @@
 import path from 'node:path';
 import { loadConfig } from './config/loadConfig.js';
 import { groupByPrefix } from './core/groupByPrefix.js';
+import { groupByController } from './core/groupByController.js';
 import { parsePaths } from './core/parsePaths.js';
 import { loadOpenApiDocument } from './fetch/loadOpenApi.js';
 import { generateIndexFile } from './generators/genIndex.js';
-import { generateJsRequestFile } from './generators/genRequestJs.js';
-import { generateTsRequestFile } from './generators/genRequestTs.js';
+import { generateJsModuleFile, generateJsRequestFile } from './generators/genRequestJs.js';
+import { generateTsModuleFile, generateTsRequestFile } from './generators/genRequestTs.js';
 import { generateApiDtsContent, generateTypesFile } from './generators/genTypes.js';
 import type { OpenApiDocument, ParsedOperation } from './types.js';
 import { removeDir, writeTextFile } from './utils/fs.js';
@@ -19,6 +20,7 @@ export interface GenerateResult {
   files: string[];
   operationCount: number;
   moduleCount: number;
+  apiFileCount: number;
 }
 
 export async function generateFromConfig(cwd: string = process.cwd()): Promise<GenerateResult> {
@@ -28,6 +30,7 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
 
   if (config.cleanOutput) {
     await removeDir(path.join(cwd, config.outputDir));
+    console.log(`Cleaned output directory: ${config.outputDir}`);
   }
 
   for (const docUrl of config.docUrls) {
@@ -40,15 +43,34 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
   const files: string[] = [];
 
   for (const [moduleName, moduleOperations] of Object.entries(grouped)) {
-    for (const operation of moduleOperations) {
-      const relativeFile = path.join(config.outputDir, moduleName, `${operation.fileBaseName}.${config.outputType}`);
-      const absoluteFile = path.join(cwd, relativeFile);
-      const content = config.outputType === 'ts'
-        ? generateTsRequestFile(operation, config.httpClientPath, getRootImportPath('types', config.typeName))
-        : generateJsRequestFile(operation, config.httpClientPath, getRootImportPath('api', config.typeName));
+    if (config.fileNaming === 'module') {
+      const controllerMap = groupByController(moduleOperations);
 
-      await writeTextFile(absoluteFile, content);
-      files.push(relativeFile);
+      for (const [controllerName, controllerOperations] of Object.entries(controllerMap)) {
+        const relativeFile = path.join(config.outputDir, moduleName, `${controllerName}.${config.outputType}`);
+        const absoluteFile = path.join(cwd, relativeFile);
+        const content = config.outputType === 'ts'
+          ? generateTsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath('types', config.typeName))
+          : generateJsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath('api', config.typeName));
+
+        for (const op of controllerOperations) {
+          op.fileBaseName = controllerName;
+        }
+
+        await writeTextFile(absoluteFile, content);
+        files.push(relativeFile);
+      }
+    } else {
+      for (const operation of moduleOperations) {
+        const relativeFile = path.join(config.outputDir, moduleName, `${operation.fileBaseName}.${config.outputType}`);
+        const absoluteFile = path.join(cwd, relativeFile);
+        const content = config.outputType === 'ts'
+          ? generateTsRequestFile(operation, config.httpClientPath, getRootImportPath('types', config.typeName))
+          : generateJsRequestFile(operation, config.httpClientPath, getRootImportPath('api', config.typeName));
+
+        await writeTextFile(absoluteFile, content);
+        files.push(relativeFile);
+      }
     }
   }
 
@@ -74,5 +96,6 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
     files,
     operationCount: operations.length,
     moduleCount: Object.keys(grouped).length,
+    apiFileCount: files.length - 3, // exclude types, api.d.ts, index
   };
 }

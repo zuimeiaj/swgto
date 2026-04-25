@@ -13,7 +13,7 @@
 ## 安装
 
 ```bash
-npm install swgto
+npm install swgto-ts
 ```
 
 ## 配置
@@ -21,7 +21,7 @@ npm install swgto
 在项目根目录创建 `.swaggerts.config.ts`：
 
 ```ts
-import type { SwaggerTsConfig } from 'swgto'
+import type { SwaggerTsConfig } from 'swgto-ts'
 
 const config: SwaggerTsConfig = {
   docUrls: 'https://example.com/openapi.json',
@@ -87,25 +87,26 @@ export interface SwaggerTsConfig {
 
 ### 字段说明
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `docUrls` | `string \| string[]` | (必填) | OpenAPI 3.x 文档的 URL，支持单文档字符串或多文档数组 |
-| `httpClientPath` | `string` | (必填) | 项目内 HTTP 请求工具的引入路径，生成的文件会从中 `import request` |
-| `outputDir` | `string` | `'src/api'` | 代码输出目录，相对项目根目录 |
-| `outputType` | `'ts' \| 'js'` | `'ts'` | 输出文件类型，`'ts'` 生成 `.ts` 文件，`'js'` 生成 `.js` 文件（带 JSDoc 类型注释） |
-| `typeName` | `string` | `'types'` | 类型文件名（不含后缀），如 `'types'` 生成 `types.ts` 或 `types.js` |
-| `fileNaming` | `'module' \| 'path'` | `'path'` | 文件组织方式：`'path'` 按接口路径每个文件一个函数；`'module'` 按控制器合并到同一个文件 |
-| `moduleName` | `(docUrl) => string` | `'services'` | 多文档时，为每个文档指定模块目录名。多文档模式下**必填** |
-| `renameMethod` | `(path, method) => string` | 见说明 | 自定义函数名生成规则。默认根据路径和方法名自动生成（如 `get_user_list`） |
-| `resolveRequestPath` | `(path, method, docUrl) => string` | 原路径 | 自定义请求路径转换规则，可用于添加统一前缀等，如 `(path) => \`/proxy\${path}\`` |
-| `ignoreUrl` | `(path, method, docUrl) => boolean` | 不过滤 | 过滤不需要生成代码的接口，返回 `true` 跳过当前接口 |
-| `cleanOutput` | `boolean` | `false` | 生成前是否清空输出目录 |
-| `flattenQueryParam` | `boolean` | `false` | 当 query 参数只有一个且为 `$ref` 引用类型时，直接用引用类型代替 `{ query: RefType }` |
-| `mergeParams` | `boolean` | `false` | 合并参数层级：`true` 时展平 `path/query/body` 嵌套，直接使用 `params: { field1, field2 }` 代替 `params: { path: {...}, query: {...} }` |
+| 字段                 | 类型                                | 默认值       | 说明                                                                                                                                   |
+| -------------------- | ----------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `docUrls`            | `string \| string[]`                | (必填)       | OpenAPI 3.x 文档的 URL，支持单文档字符串或多文档数组                                                                                   |
+| `httpClientPath`     | `string`                            | (必填)       | 项目内 HTTP 请求工具的引入路径，生成的文件会从中 `import request`                                                                      |
+| `outputDir`          | `string`                            | `'src/api'`  | 代码输出目录，相对项目根目录                                                                                                           |
+| `outputType`         | `'ts' \| 'js'`                      | `'ts'`       | 输出文件类型，`'ts'` 生成 `.ts` 文件，`'js'` 生成 `.js` 文件（带 JSDoc 类型注释）                                                      |
+| `typeName`           | `string`                            | `'types'`    | 类型文件名（不含后缀），如 `'types'` 生成 `types.ts` 或 `types.js`                                                                     |
+| `fileNaming`         | `'module' \| 'path'`                | `'path'`     | 文件组织方式：`'path'` 按接口路径每个文件一个函数；`'module'` 按控制器合并到同一个文件                                                 |
+| `moduleName`         | `(docUrl) => string`                | `'services'` | 多文档时，为每个文档指定模块目录名。多文档模式下**必填**                                                                               |
+| `renameMethod`       | `(path, method) => string`          | 见说明       | 自定义函数名生成规则。默认根据路径和方法名自动生成（如 `get_user_list`）                                                               |
+| `resolveRequestPath` | `(path, method, docUrl) => string`  | 原路径       | 自定义请求路径转换规则，可用于添加统一前缀等，如 `(path) => \`/proxy\${path}\``                                                        |
+| `ignoreUrl`          | `(path, method, docUrl) => boolean` | 不过滤       | 过滤不需要生成代码的接口，返回 `true` 跳过当前接口                                                                                     |
+| `cleanOutput`        | `boolean`                           | `false`      | 生成前是否清空输出目录                                                                                                                 |
+| `flattenQueryParam`  | `boolean`                           | `false`      | 当 query 参数只有一个且为 `$ref` 引用类型时，直接用引用类型代替 `{ query: RefType }`                                                   |
+| `mergeParams`        | `boolean`                           | `false`      | 合并参数层级：`true` 时展平 `path/query/body` 嵌套，直接使用 `params: { field1, field2 }` 代替 `params: { path: {...}, query: {...} }` |
 
 ### 函数名生成规则
 
 默认函数名格式为 `{method}_{path_segments}`，如：
+
 - `GET /user/list` → `get_user_list`
 - `POST /user/create` → `post_user_create`
 

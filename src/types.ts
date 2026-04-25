@@ -6,6 +6,7 @@ export interface SwaggerTsConfig {
   httpClientPath: string;
   renameMethod?: (path: string, method: string) => string;
   resolveRequestPath?: (path: string, method: string, docUrl: string) => string;
+  ignoreUrl?: (path: string, method: string, docUrl: string) => boolean;
   outputDir?: string;
   moduleName?: (docUrl: string) => string;
   outputType?: OutputType;

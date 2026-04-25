@@ -82,6 +82,10 @@ export function parsePaths(
       }
 
       const moduleName = config.moduleName?.(docUrl) ?? 'services';
+      if (config.ignoreUrl?.(apiPath, method, docUrl)) {
+        continue;
+      }
+
       const functionName = sanitizeIdentifier(
         config.renameMethod?.(apiPath, method) ?? buildDefaultMethodName(apiPath, method),
       );

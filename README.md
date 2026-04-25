@@ -7,7 +7,6 @@
 - 按路径前缀分组的请求文件
 - 按文档模块输出请求文件。单文档默认输出到 `services/`，多文档时多个模块目录平级
 - `outputDir/index.ts` 或 `outputDir/index.js`
-- 聚合声明文件 `outputDir/api.d.ts`
 - 类型文件 `outputDir/types.ts` 或带 JSDoc 的 `outputDir/types.js`
 
 ## 安装

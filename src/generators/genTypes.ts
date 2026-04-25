@@ -40,6 +40,16 @@ function buildParameterDoc(
   return formatDocLines(lines);
 }
 
+function jsdocToInline(doc: string, indent: string): string[] {
+  return doc
+    .split('\n')
+    .filter((line) => {
+      const t = line.trim();
+      return t !== '/**' && t !== '*/' && !t.startsWith('/**');
+    })
+    .map((line) => `${indent}// ${line.replace(/^\s*\* ?/, '')}`);
+}
+
 function renderObjectFields(
   fields: Array<{ name: string; type: string; optional?: boolean; doc?: string }>,
   indent: string = '',
@@ -48,7 +58,7 @@ function renderObjectFields(
 
   for (const field of fields) {
     if (field.doc) {
-      lines.push(...field.doc.split('\n').map((line) => `${indent}${line}`));
+      lines.push(...jsdocToInline(field.doc, indent));
     }
     lines.push(`${indent}${field.name}${field.optional ? '?' : ''}: ${field.type};`);
   }
@@ -93,7 +103,8 @@ function renderComponentSchemas(document: OpenApiDocument): string[] {
 }
 
 function toJSDocType(typeText: string): string {
-  return typeText.replace(/;/g, '').replace(/\?/g, '=');
+  // Convert TS object syntax to JSDoc: replace ; with , and clean trailing comma
+  return typeText.replace(/;\s*/g, ', ').replace(/,\s*\}/g, ' }');
 }
 
 export function generateTypesFile(

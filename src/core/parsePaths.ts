@@ -112,14 +112,26 @@ export function parsePaths(
       }
 
       if (pathFields.length) {
-        requestTypeParts.push(`{ path: { ${pathFields.join(' ')} } }`);
+        if (config.mergeParams) {
+          requestTypeParts.push(`{ ${pathFields.join(' ')} }`);
+        } else {
+          requestTypeParts.push(`{ path: { ${pathFields.join(' ')} } }`);
+        }
       }
 
       if (queryFields.length) {
         if (config.flattenQueryParam && queryParams.length === 1 && queryParams[0].schema?.$ref) {
-          requestTypeParts.push(`{ query: ${schemaToTs(queryParams[0].schema)} }`);
+          if (config.mergeParams) {
+            requestTypeParts.push(schemaToTs(queryParams[0].schema));
+          } else {
+            requestTypeParts.push(`{ query: ${schemaToTs(queryParams[0].schema)} }`);
+          }
         } else {
-          requestTypeParts.push(`{ query: { ${queryFields.join(' ')} } }`);
+          if (config.mergeParams) {
+            requestTypeParts.push(`{ ${queryFields.join(' ')} }`);
+          } else {
+            requestTypeParts.push(`{ query: { ${queryFields.join(' ')} } }`);
+          }
         }
       }
 

@@ -7,12 +7,12 @@ import { loadOpenApiDocument } from './fetch/loadOpenApi.js';
 import { generateIndexFile } from './generators/genIndex.js';
 import { generateJsModuleFile, generateJsRequestFile } from './generators/genRequestJs.js';
 import { generateTsModuleFile, generateTsRequestFile } from './generators/genRequestTs.js';
-import { generateApiDtsContent, generateTypesFile } from './generators/genTypes.js';
+import { generateTypesFile } from './generators/genTypes.js';
 import type { OpenApiDocument, ParsedOperation } from './types.js';
 import { removeDir, writeTextFile } from './utils/fs.js';
 
-function getRootImportPath(fileKind: 'types' | 'api', typeName: string): string {
-  return fileKind === 'types' ? `../${typeName}` : '../api';
+function getRootImportPath(typeName: string): string {
+  return `../${typeName}`;
 }
 
 export interface GenerateResult {
@@ -50,8 +50,8 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
         const relativeFile = path.join(config.outputDir, moduleName, `${controllerName}.${config.outputType}`);
         const absoluteFile = path.join(cwd, relativeFile);
         const content = config.outputType === 'ts'
-          ? generateTsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath('types', config.typeName))
-          : generateJsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath('api', config.typeName));
+          ? generateTsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams)
+          : generateJsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams);
 
         for (const op of controllerOperations) {
           op.fileBaseName = controllerName;
@@ -65,8 +65,8 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
         const relativeFile = path.join(config.outputDir, moduleName, `${operation.fileBaseName}.${config.outputType}`);
         const absoluteFile = path.join(cwd, relativeFile);
         const content = config.outputType === 'ts'
-          ? generateTsRequestFile(operation, config.httpClientPath, getRootImportPath('types', config.typeName))
-          : generateJsRequestFile(operation, config.httpClientPath, getRootImportPath('api', config.typeName));
+          ? generateTsRequestFile(operation, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams)
+          : generateJsRequestFile(operation, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams);
 
         await writeTextFile(absoluteFile, content);
         files.push(relativeFile);
@@ -75,19 +75,15 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
   }
 
   const typesContent = generateTypesFile(documentMap, operations, config);
-  const apiDtsContent = generateApiDtsContent(operations, config);
   const indexContent = generateIndexFile(operations, config);
   const typesFile = path.join(cwd, config.outputDir, `${config.typeName}.${config.outputType === 'ts' ? 'ts' : 'js'}`);
-  const apiDtsFile = path.join(cwd, config.outputDir, 'api.d.ts');
   const indexFile = path.join(cwd, config.outputDir, `index.${config.outputType}`);
 
   await writeTextFile(typesFile, typesContent);
-  await writeTextFile(apiDtsFile, apiDtsContent);
   await writeTextFile(indexFile, indexContent);
 
   files.push(
     path.relative(cwd, typesFile),
-    path.relative(cwd, apiDtsFile),
     path.relative(cwd, indexFile),
   );
 
@@ -96,6 +92,6 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
     files,
     operationCount: operations.length,
     moduleCount: Object.keys(grouped).length,
-    apiFileCount: files.length - 3, // exclude types, api.d.ts, index
+    apiFileCount: files.length - 2, // exclude types + index
   };
 }

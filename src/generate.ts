@@ -10,6 +10,8 @@ import { generateTsModuleFile, generateTsRequestFile } from './generators/genReq
 import { generateTypesFile } from './generators/genTypes.js';
 import type { OpenApiDocument, ParsedOperation } from './types.js';
 import { removeDir, writeTextFile } from './utils/fs.js';
+import { compareSnapshot, loadSnapshot, saveSnapshot, SNAPSHOT_FILE } from './utils/snapshot.js';
+import type { SnapshotEntry } from './utils/snapshot.js';
 
 function getRootImportPath(typeName: string): string {
   return `../${typeName}`;
@@ -21,12 +23,17 @@ export interface GenerateResult {
   operationCount: number;
   moduleCount: number;
   apiFileCount: number;
+  newOperations: SnapshotEntry[];
+  removedOperations: SnapshotEntry[];
 }
 
 export async function generateFromConfig(cwd: string = process.cwd()): Promise<GenerateResult> {
   const { configPath, config } = await loadConfig(cwd);
   const documentMap = new Map<string, OpenApiDocument>();
   const operations: ParsedOperation[] = [];
+
+  const snapshotPath = path.join(cwd, config.outputDir, SNAPSHOT_FILE);
+  const previousSnapshot = await loadSnapshot(snapshotPath);
 
   if (config.cleanOutput) {
     await removeDir(path.join(cwd, config.outputDir));
@@ -40,6 +47,8 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
   }
 
   const grouped = groupByPrefix(operations);
+  const { newOperations, removedOperations } = compareSnapshot(previousSnapshot, operations);
+
   const files: string[] = [];
 
   for (const [moduleName, moduleOperations] of Object.entries(grouped)) {
@@ -87,11 +96,15 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
     path.relative(cwd, indexFile),
   );
 
+  await saveSnapshot(snapshotPath, operations);
+
   return {
     configPath,
     files,
     operationCount: operations.length,
     moduleCount: Object.keys(grouped).length,
     apiFileCount: files.length - 2, // exclude types + index
+    newOperations,
+    removedOperations,
   };
 }

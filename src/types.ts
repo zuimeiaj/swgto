@@ -1,6 +1,15 @@
 export type OutputType = 'ts' | 'js';
 export type RequestConfig = Record<string, unknown>;
 
+export interface ApiDocsConfig {
+  enable?: boolean;
+  output?: string;
+  title?: string;
+  companyName?: string;
+  template?: string;
+  theme?: string;
+}
+
 export interface SwaggerTsConfig {
   docUrls: string | string[];
   httpClientPath: string;
@@ -15,6 +24,7 @@ export interface SwaggerTsConfig {
   fileNaming?: 'module' | 'path';
   flattenQueryParam?: boolean;
   mergeParams?: boolean;
+  apiDocs?: ApiDocsConfig;
 }
 
 export interface OpenApiDocument {
@@ -83,6 +93,14 @@ export interface ResolvedConfig extends SwaggerTsConfig {
   fileNaming: 'module' | 'path';
   flattenQueryParam: boolean;
   mergeParams: boolean;
+  apiDocs: {
+    enable: boolean;
+    output: string;
+    title?: string;
+    companyName?: string;
+    template?: string;
+    theme?: string;
+  };
 }
 
 export interface ParsedOperation {

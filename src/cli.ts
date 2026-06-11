@@ -11,6 +11,11 @@ async function main(): Promise<void> {
     console.log(`swgto loaded config: ${result.configPath}`);
     console.log(`Generated ${result.apiFileCount} api file(s), ${result.operationCount} operation(s) in ${result.moduleCount} module(s).`);
     console.log(`Wrote ${result.files.length} file(s) total (including types, index).`);
+
+    const htmlFile = result.files.find((f) => f.endsWith('.html'));
+    if (htmlFile) {
+      console.log(`Generated API docs: ${htmlFile}`);
+    }
     console.log(`Done in ${elapsedMs}ms.`);
 
     if (result.newOperations.length > 0) {

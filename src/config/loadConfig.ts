@@ -50,6 +50,14 @@ export async function loadConfig(cwd: string): Promise<{ configPath: string; con
     fileNaming: rawConfig.fileNaming ?? 'path',
     flattenQueryParam: rawConfig.flattenQueryParam ?? false,
     mergeParams: rawConfig.mergeParams ?? false,
+    apiDocs: {
+      enable: rawConfig.apiDocs?.enable ?? false,
+      output: rawConfig.apiDocs?.output ?? 'api-docs.html',
+      title: rawConfig.apiDocs?.title,
+      companyName: rawConfig.apiDocs?.companyName,
+      template: rawConfig.apiDocs?.template,
+      theme: rawConfig.apiDocs?.theme,
+    },
   }
 
   return { configPath, config }

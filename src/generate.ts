@@ -98,45 +98,53 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
     path.relative(cwd, indexFile),
   );
 
-  // Generate API docs HTML (optional)
+  // Generate API docs (optional)
   if (config.apiDocs.enable) {
-    const { generateApiDocsHtml, DEFAULT_TEMPLATE } = await import('./generators/genApiDocsHtml.js');
+    let content: string;
+    const docFile = path.join(cwd, config.outputDir, config.apiDocs.output);
 
-    // Auto-generate template file if it doesn't exist
-    const templateFile = path.join(cwd, '.swagger.docs.html');
-    if (!existsSync(templateFile)) {
-      await writeTextFile(templateFile, DEFAULT_TEMPLATE);
-      console.log(`Created template: .swagger.docs.html`);
-    }
+    if (config.apiDocs.format === 'markdown') {
+      const { generateApiDocsMd } = await import('./generators/genApiDocsMd.js');
+      content = generateApiDocsMd(documentMap, operations, config);
+    } else {
+      const { generateApiDocsHtml, DEFAULT_TEMPLATE } = await import('./generators/genApiDocsHtml.js');
 
-    // Resolve template: config path > .swagger.docs.html in cwd > built-in
-    const templatePaths: string[] = [];
-    if (config.apiDocs.template) {
-      templatePaths.push(path.resolve(cwd, config.apiDocs.template));
-    }
-    templatePaths.push(templateFile);
-
-    let templateHtml: string | undefined;
-    for (const tp of templatePaths) {
-      if (existsSync(tp)) {
-        templateHtml = await readFile(tp, 'utf-8');
-        break;
+      // Auto-generate template file if it doesn't exist
+      const templateFile = path.join(cwd, '.swagger.docs.html');
+      if (!existsSync(templateFile)) {
+        await writeTextFile(templateFile, DEFAULT_TEMPLATE);
+        console.log(`Created template: .swagger.docs.html`);
       }
-    }
 
-    // Load theme CSS if configured
-    let themeCss: string | undefined;
-    if (config.apiDocs.theme) {
-      const themePath = path.resolve(cwd, config.apiDocs.theme);
-      if (existsSync(themePath)) {
-        themeCss = await readFile(themePath, 'utf-8');
+      // Resolve template: config path > .swagger.docs.html in cwd > built-in
+      const templatePaths: string[] = [];
+      if (config.apiDocs.template) {
+        templatePaths.push(path.resolve(cwd, config.apiDocs.template));
       }
+      templatePaths.push(templateFile);
+
+      let templateHtml: string | undefined;
+      for (const tp of templatePaths) {
+        if (existsSync(tp)) {
+          templateHtml = await readFile(tp, 'utf-8');
+          break;
+        }
+      }
+
+      // Load theme CSS if configured
+      let themeCss: string | undefined;
+      if (config.apiDocs.theme) {
+        const themePath = path.resolve(cwd, config.apiDocs.theme);
+        if (existsSync(themePath)) {
+          themeCss = await readFile(themePath, 'utf-8');
+        }
+      }
+
+      content = generateApiDocsHtml(documentMap, operations, config, templateHtml, themeCss);
     }
 
-    const htmlContent = generateApiDocsHtml(documentMap, operations, config, templateHtml, themeCss);
-    const htmlFile = path.join(cwd, config.outputDir, config.apiDocs.output);
-    await writeTextFile(htmlFile, htmlContent);
-    files.push(path.relative(cwd, htmlFile));
+    await writeTextFile(docFile, content);
+    files.push(path.relative(cwd, docFile));
   }
 
   await saveSnapshot(snapshotPath, operations);

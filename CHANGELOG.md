@@ -4,3 +4,4 @@
 【2026-06-11】【feat】apiDocs 目录改为书本风格，方法+路径 | 点线 | 摘要
 【2026-06-11】【feat】apiDocs 接口卡片中请求体和响应改为字段表格展示，含名称/类型/必填/描述
 【2026-06-11】【feat】apiDocs 封面改为 A4 整页大小，支持 companyName 配置项
+【2026-06-11】【feat】apiDocs 支持 format: 'markdown' 输出 Markdown 格式文档

@@ -1,9 +1,12 @@
 export type OutputType = 'ts' | 'js';
 export type RequestConfig = Record<string, unknown>;
 
+export type ApiDocsFormat = 'html' | 'markdown';
+
 export interface ApiDocsConfig {
   enable?: boolean;
   output?: string;
+  format?: ApiDocsFormat;
   title?: string;
   companyName?: string;
   template?: string;
@@ -96,6 +99,7 @@ export interface ResolvedConfig extends SwaggerTsConfig {
   apiDocs: {
     enable: boolean;
     output: string;
+    format: ApiDocsFormat;
     title?: string;
     companyName?: string;
     template?: string;

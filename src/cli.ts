@@ -12,9 +12,9 @@ async function main(): Promise<void> {
     console.log(`Generated ${result.apiFileCount} api file(s), ${result.operationCount} operation(s) in ${result.moduleCount} module(s).`);
     console.log(`Wrote ${result.files.length} file(s) total (including types, index).`);
 
-    const htmlFile = result.files.find((f) => f.endsWith('.html'));
-    if (htmlFile) {
-      console.log(`Generated API docs: ${htmlFile}`);
+    const docFile = result.files.find((f) => f.endsWith('.html') || f.endsWith('.md'));
+    if (docFile) {
+      console.log(`Generated API docs: ${docFile}`);
     }
     console.log(`Done in ${elapsedMs}ms.`);
 

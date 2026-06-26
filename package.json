@@ -25,9 +25,6 @@
     "generator",
     "cli"
   ],
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
-  },
   "engines": {
     "node": ">=18"
   },

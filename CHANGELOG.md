@@ -5,3 +5,5 @@
 【2026-06-11】【feat】apiDocs 接口卡片中请求体和响应改为字段表格展示，含名称/类型/必填/描述
 【2026-06-11】【feat】apiDocs 封面改为 A4 整页大小，支持 companyName 配置项
 【2026-06-11】【feat】apiDocs 支持 format: 'markdown' 输出 Markdown 格式文档
+【2026-06-30】【feat】mergeParams=true 时生成的函数体中解构剔除 path 参数 key，避免残留在 body 中（不修改原对象）
+【2026-06-30】【fix】JS 输出 JSDoc @param 对内联类型不再用 import() 包裹，VSCode 类型提示正确显示

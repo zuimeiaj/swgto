@@ -1,5 +1,21 @@
 import type { ParsedOperation } from '../types.js';
 
+function isSimpleTypeRef(name: string): boolean {
+  return /^[\w.]+$/.test(name)
+}
+
+function buildParamTag(requestParamType: string, typeImportPath: string): string {
+  if (requestParamType === 'void') return '[params]'
+
+  // Named type reference (e.g. GetUserParams) → {import("../types").GetUserParams} params
+  if (isSimpleTypeRef(requestParamType)) {
+    return `{import(${JSON.stringify(typeImportPath)}).${requestParamType}} params`
+  }
+
+  // Inline type expression (e.g. { taskId: number } & { id: string }) → use directly without import()
+  return `{${requestParamType}} params`
+}
+
 function buildFunctionDoc(operation: ParsedOperation, typeImportPath: string, requestParamType: string): string {
   const lines: string[] = [];
 
@@ -14,7 +30,7 @@ function buildFunctionDoc(operation: ParsedOperation, typeImportPath: string, re
   lines.push(`@path ${operation.path}`);
   lines.push(`@requestPath ${operation.requestPath}`);
   lines.push(`@method ${operation.method.toUpperCase()}`);
-  lines.push(`@param ${requestParamType === 'void' ? '[params]' : `{import(${JSON.stringify(typeImportPath)}).${requestParamType}} params`}`);
+  lines.push(`@param ${buildParamTag(requestParamType, typeImportPath)}`);
   lines.push('@param [config]');
   if (operation.responseTypeName) {
     lines.push(`@returns {Promise<import(${JSON.stringify(typeImportPath)}).${operation.responseTypeName}>}`);
@@ -31,9 +47,16 @@ function renderFunction(operation: ParsedOperation, useGenericUrl: boolean, merg
     ? `    params: ${mergeParams ? 'params' : 'params?.query'},\n`
     : '';
   const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length;
-  const bodyLine = operation.requestBodySchema
-    ? `    data: ${mergeParams ? 'params' : (bodyOnly ? 'params' : 'params?.body')},\n`
+
+  // When mergeParams=true with path params, extract path keys so they don't leak into body
+  const hasBodySchema = Boolean(operation.requestBodySchema);
+  const needsCleanData = mergeParams && hasBodySchema && operation.pathParams.length > 0;
+  const destructureLine = needsCleanData
+    ? `  const { ${operation.pathParams.map((p) => p.name).join(', ')}, ...requestData } = params;\n`
     : '';
+  const dataValue = needsCleanData ? 'requestData' : mergeParams ? 'params' : (bodyOnly ? 'params' : 'params?.body');
+
+  const bodyLine = hasBodySchema ? `    data: ${dataValue},\n` : '';
   const pathArg = mergeParams ? 'params' : 'params?.path';
   const urlValue = useGenericUrl && operation.pathParams.length
     ? `buildUrl(${JSON.stringify(operation.requestPath)}, ${pathArg})`
@@ -43,7 +66,7 @@ function renderFunction(operation: ParsedOperation, useGenericUrl: boolean, merg
   const pathLine = `    url: ${urlValue},\n`;
 
   return `export async function ${operation.functionName}(params, config) {
-  return request({
+${destructureLine}  return request({
 ${pathLine}    method: ${JSON.stringify(operation.method)},
 ${queryLine}${bodyLine}    ...config,
   });
@@ -56,9 +79,16 @@ export function generateJsRequestFile(operation: ParsedOperation, httpClientPath
     ? `    params: ${mergeParams ? 'params' : 'params?.query'},\n`
     : '';
   const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length;
-  const bodyLine = operation.requestBodySchema
-    ? `    data: ${mergeParams ? 'params' : (bodyOnly ? 'params' : 'params?.body')},\n`
+
+  // When mergeParams=true with path params, extract path keys so they don't leak into body
+  const hasBodySchema = Boolean(operation.requestBodySchema);
+  const needsCleanData = mergeParams && hasBodySchema && operation.pathParams.length > 0;
+  const destructureLine = needsCleanData
+    ? `  const { ${operation.pathParams.map((p) => p.name).join(', ')}, ...requestData } = params;\n`
     : '';
+  const dataValue = needsCleanData ? 'requestData' : mergeParams ? 'params' : (bodyOnly ? 'params' : 'params?.body');
+
+  const bodyLine = hasBodySchema ? `    data: ${dataValue},\n` : '';
   const pathArg = mergeParams ? 'params' : 'params?.path';
   const pathLine = operation.pathParams.length ? `    url: buildUrl(${pathArg}),\n` : `    url: ${JSON.stringify(operation.requestPath)},\n`;
   const buildUrlHelper = operation.pathParams.length
@@ -76,7 +106,7 @@ ${buildUrlHelper}
 
 ${buildFunctionDoc(operation, typeImportPath, requestParamType)}
 export async function ${operation.functionName}(params, config) {
-  return request({
+${destructureLine}  return request({
 ${pathLine}    method: ${JSON.stringify(operation.method)},
 ${queryLine}${bodyLine}    ...config,
   });

@@ -22,9 +22,16 @@ function renderFunction(operation: ParsedOperation, useGenericUrl: boolean, merg
     : 'params?: void, config?: RequestConfig'
   const defaultResponseType = operation.responseTypeName ?? 'unknown'
   const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length
-  const bodyLine = operation.requestBodySchema
-    ? `    data: ${mergeParams ? 'params' : bodyOnly ? 'params' : 'params?.body'},\n`
+
+  // When mergeParams=true with path params, extract path keys so they don't leak into body
+  const hasBodySchema = Boolean(operation.requestBodySchema)
+  const needsCleanData = mergeParams && hasBodySchema && operation.pathParams.length > 0
+  const destructureLine = needsCleanData
+    ? `  const { ${operation.pathParams.map((p) => p.name).join(', ')}, ...requestData } = params;\n`
     : ''
+  const dataValue = needsCleanData ? 'requestData' : mergeParams ? 'params' : bodyOnly ? 'params' : 'params?.body'
+
+  const bodyLine = hasBodySchema ? `    data: ${dataValue},\n` : ''
   const queryLine = operation.queryParams.length ? `    params: ${mergeParams ? 'params' : 'params?.query'},\n` : ''
   const pathArg = mergeParams ? 'params' : 'params?.path'
   const urlValue =
@@ -36,7 +43,7 @@ function renderFunction(operation: ParsedOperation, useGenericUrl: boolean, merg
   const pathLine = `    url: ${urlValue},\n`
 
   return `${buildFunctionDoc(operation)}export async function ${operation.functionName}<T = ${defaultResponseType}>(${requestArg}): Promise<T> {
-  return request<T>({
+${destructureLine}  return request<T>({
 ${pathLine}    method: ${JSON.stringify(operation.method)},
 ${queryLine}${bodyLine}    ...config,
   });

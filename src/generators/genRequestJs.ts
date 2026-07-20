@@ -42,22 +42,23 @@ function buildFunctionDoc(operation: ParsedOperation, typeImportPath: string, re
   return ['/**', ...lines.map((line) => ` * ${line}`), ' */'].join('\n');
 }
 
-function renderFunction(operation: ParsedOperation, useGenericUrl: boolean, mergeParams: boolean): string {
+function renderFunction(operation: ParsedOperation, useGenericUrl: boolean, mergeParams: boolean, flattenOnGet: boolean = false): string {
+  const effectiveMerge = mergeParams || (flattenOnGet && operation.method === 'get');
   const queryLine = operation.queryParams.length
-    ? `    params: ${mergeParams ? 'params' : 'params?.query'},\n`
+    ? `    params: ${effectiveMerge ? 'params' : 'params?.query'},\n`
     : '';
   const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length;
 
-  // When mergeParams=true with path params, extract path keys so they don't leak into body
+  // When effectiveMerge=true with path params, extract path keys so they don't leak into body
   const hasBodySchema = Boolean(operation.requestBodySchema);
-  const needsCleanData = mergeParams && hasBodySchema && operation.pathParams.length > 0;
+  const needsCleanData = effectiveMerge && hasBodySchema && operation.pathParams.length > 0;
   const destructureLine = needsCleanData
     ? `  const { ${operation.pathParams.map((p) => p.name).join(', ')}, ...requestData } = params;\n`
     : '';
-  const dataValue = needsCleanData ? 'requestData' : mergeParams ? 'params' : (bodyOnly ? 'params' : 'params?.body');
+  const dataValue = needsCleanData ? 'requestData' : effectiveMerge ? 'params' : (bodyOnly ? 'params' : 'params?.body');
 
   const bodyLine = hasBodySchema ? `    data: ${dataValue},\n` : '';
-  const pathArg = mergeParams ? 'params' : 'params?.path';
+  const pathArg = effectiveMerge ? 'params' : 'params?.path';
   const urlValue = useGenericUrl && operation.pathParams.length
     ? `buildUrl(${JSON.stringify(operation.requestPath)}, ${pathArg})`
     : operation.pathParams.length
@@ -73,23 +74,24 @@ ${queryLine}${bodyLine}    ...config,
 }`;
 }
 
-export function generateJsRequestFile(operation: ParsedOperation, httpClientPath: string, typeImportPath: string, mergeParams: boolean = false): string {
+export function generateJsRequestFile(operation: ParsedOperation, httpClientPath: string, typeImportPath: string, mergeParams: boolean = false, flattenOnGet: boolean = false): string {
+  const effectiveMerge = mergeParams || (flattenOnGet && operation.method === 'get');
   const requestParamType = operation.requestTypeExpression ?? 'void';
   const queryLine = operation.queryParams.length
-    ? `    params: ${mergeParams ? 'params' : 'params?.query'},\n`
+    ? `    params: ${effectiveMerge ? 'params' : 'params?.query'},\n`
     : '';
   const bodyOnly = Boolean(operation.requestBodySchema) && !operation.queryParams.length && !operation.pathParams.length;
 
-  // When mergeParams=true with path params, extract path keys so they don't leak into body
+  // When effectiveMerge=true with path params, extract path keys so they don't leak into body
   const hasBodySchema = Boolean(operation.requestBodySchema);
-  const needsCleanData = mergeParams && hasBodySchema && operation.pathParams.length > 0;
+  const needsCleanData = effectiveMerge && hasBodySchema && operation.pathParams.length > 0;
   const destructureLine = needsCleanData
     ? `  const { ${operation.pathParams.map((p) => p.name).join(', ')}, ...requestData } = params;\n`
     : '';
-  const dataValue = needsCleanData ? 'requestData' : mergeParams ? 'params' : (bodyOnly ? 'params' : 'params?.body');
+  const dataValue = needsCleanData ? 'requestData' : effectiveMerge ? 'params' : (bodyOnly ? 'params' : 'params?.body');
 
   const bodyLine = hasBodySchema ? `    data: ${dataValue},\n` : '';
-  const pathArg = mergeParams ? 'params' : 'params?.path';
+  const pathArg = effectiveMerge ? 'params' : 'params?.path';
   const pathLine = operation.pathParams.length ? `    url: buildUrl(${pathArg}),\n` : `    url: ${JSON.stringify(operation.requestPath)},\n`;
   const buildUrlHelper = operation.pathParams.length
     ? `
@@ -114,7 +116,7 @@ ${queryLine}${bodyLine}    ...config,
 `;
 }
 
-export function generateJsModuleFile(operations: ParsedOperation[], httpClientPath: string, typeImportPath: string, mergeParams: boolean = false): string {
+export function generateJsModuleFile(operations: ParsedOperation[], httpClientPath: string, typeImportPath: string, mergeParams: boolean = false, flattenOnGet: boolean = false): string {
   const needsBuildUrl = operations.some((op) => op.pathParams.length > 0);
   const buildUrlHelper = needsBuildUrl
     ? `
@@ -126,7 +128,7 @@ function buildUrl(url, path) {
 
   const functions = operations.map((op) => {
     const doc = buildFunctionDoc(op, typeImportPath, op.requestTypeExpression ?? 'void');
-    return `${doc}\n\n${renderFunction(op, true, mergeParams)}`;
+    return `${doc}\n\n${renderFunction(op, true, mergeParams, flattenOnGet)}`;
   }).join('\n\n');
 
   return `/* eslint-disable */

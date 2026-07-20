@@ -61,8 +61,8 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
         const relativeFile = path.join(config.outputDir, moduleName, `${controllerName}.${config.outputType}`);
         const absoluteFile = path.join(cwd, relativeFile);
         const content = config.outputType === 'ts'
-          ? generateTsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams)
-          : generateJsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams);
+          ? generateTsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams, config.flattenOnGet)
+          : generateJsModuleFile(controllerOperations, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams, config.flattenOnGet);
 
         for (const op of controllerOperations) {
           op.fileBaseName = controllerName;
@@ -76,8 +76,8 @@ export async function generateFromConfig(cwd: string = process.cwd()): Promise<G
         const relativeFile = path.join(config.outputDir, moduleName, `${operation.fileBaseName}.${config.outputType}`);
         const absoluteFile = path.join(cwd, relativeFile);
         const content = config.outputType === 'ts'
-          ? generateTsRequestFile(operation, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams)
-          : generateJsRequestFile(operation, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams);
+          ? generateTsRequestFile(operation, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams, config.flattenOnGet)
+          : generateJsRequestFile(operation, config.httpClientPath, getRootImportPath(config.typeName), config.mergeParams, config.flattenOnGet);
 
         await writeTextFile(absoluteFile, content);
         files.push(relativeFile);

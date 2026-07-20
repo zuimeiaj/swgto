@@ -52,6 +52,7 @@ export async function loadConfig(cwd: string): Promise<{ configPath: string; con
     fileNaming: rawConfig.fileNaming ?? 'path',
     flattenQueryParam: rawConfig.flattenQueryParam ?? false,
     mergeParams: rawConfig.mergeParams ?? false,
+    flattenOnGet: rawConfig.flattenOnGet ?? false,
     apiDocs: {
       enable: rawConfig.apiDocs?.enable ?? false,
       output: rawConfig.apiDocs?.output ?? defaultOutput,

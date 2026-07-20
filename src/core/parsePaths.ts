@@ -106,31 +106,74 @@ export function parsePaths(
       const pathFields = pathParams.map((param) => `${param.name}: ${schemaToTs(param.schema)};`);
       const queryFields = queryParams.map((param) => `${param.name}${param.required ? '' : '?'}: ${schemaToTs(param.schema)};`);
       const requestTypeParts: string[] = [];
+      const isFlattenOnGet = config.flattenOnGet && method === 'get';
 
-      if (bodyType) {
-        requestTypeParts.push(bodyType);
-      }
+      if (isFlattenOnGet) {
+        // flattenOnGet: flatten all body/query/path fields into a single level
+        const flatFields: string[] = [];
 
-      if (pathFields.length) {
-        if (config.mergeParams) {
-          requestTypeParts.push(`{ ${pathFields.join(' ')} }`);
-        } else {
-          requestTypeParts.push(`{ path: { ${pathFields.join(' ')} } }`);
-        }
-      }
-
-      if (queryFields.length) {
-        if (config.flattenQueryParam && queryParams.length === 1 && queryParams[0].schema?.$ref) {
-          if (config.mergeParams) {
-            requestTypeParts.push(schemaToTs(queryParams[0].schema));
+        // Extract body properties to top level
+        if (requestBodySchema) {
+          if (!requestBodySchema.$ref && requestBodySchema.properties) {
+            for (const [name, schema] of Object.entries(requestBodySchema.properties)) {
+              if (schema.$ref) {
+                // $ref property → unwrap to intersection type (e.g. AdminUserVO instead of { adminUserVO: AdminUserVO })
+                requestTypeParts.push(schemaToTs(schema));
+              } else {
+                // inline property → keep as named field
+                const required = requestBodySchema.required?.includes(name) ?? false;
+                flatFields.push(`${name}${required ? '' : '?'}: ${schemaToTs(schema)}`);
+              }
+            }
           } else {
-            requestTypeParts.push(`{ query: ${schemaToTs(queryParams[0].schema)} }`);
+            // Body is a $ref or has no inline properties — use the type as-is
+            requestTypeParts.push(bodyType!);
           }
-        } else {
-          if (config.mergeParams) {
-            requestTypeParts.push(`{ ${queryFields.join(' ')} }`);
+        }
+
+        // Extract query params to top level ($ref params are unwrapped to intersection type)
+        for (const param of queryParams) {
+          if (param.schema?.$ref) {
+            requestTypeParts.push(schemaToTs(param.schema));
           } else {
-            requestTypeParts.push(`{ query: { ${queryFields.join(' ')} } }`);
+            flatFields.push(`${param.name}${param.required ? '' : '?'}: ${schemaToTs(param.schema)}`);
+          }
+        }
+
+        // Extract path params to top level
+        for (const field of pathFields) {
+          flatFields.push(field);
+        }
+
+        if (flatFields.length) {
+          requestTypeParts.push(`{ ${flatFields.join(' ')} }`);
+        }
+      } else {
+        if (bodyType) {
+          requestTypeParts.push(bodyType);
+        }
+
+        if (pathFields.length) {
+          if (config.mergeParams) {
+            requestTypeParts.push(`{ ${pathFields.join(' ')} }`);
+          } else {
+            requestTypeParts.push(`{ path: { ${pathFields.join(' ')} } }`);
+          }
+        }
+
+        if (queryFields.length) {
+          if (config.flattenQueryParam && queryParams.length === 1 && queryParams[0].schema?.$ref) {
+            if (config.mergeParams) {
+              requestTypeParts.push(schemaToTs(queryParams[0].schema));
+            } else {
+              requestTypeParts.push(`{ query: ${schemaToTs(queryParams[0].schema)} }`);
+            }
+          } else {
+            if (config.mergeParams) {
+              requestTypeParts.push(`{ ${queryFields.join(' ')} }`);
+            } else {
+              requestTypeParts.push(`{ query: { ${queryFields.join(' ')} } }`);
+            }
           }
         }
       }

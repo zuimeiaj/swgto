@@ -27,6 +27,7 @@ export interface SwaggerTsConfig {
   fileNaming?: 'module' | 'path';
   flattenQueryParam?: boolean;
   mergeParams?: boolean;
+  flattenOnGet?: boolean;
   apiDocs?: ApiDocsConfig;
 }
 
@@ -96,6 +97,7 @@ export interface ResolvedConfig extends SwaggerTsConfig {
   fileNaming: 'module' | 'path';
   flattenQueryParam: boolean;
   mergeParams: boolean;
+  flattenOnGet: boolean;
   apiDocs: {
     enable: boolean;
     output: string;

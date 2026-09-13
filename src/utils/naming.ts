@@ -50,34 +50,36 @@ export function buildTypeName(functionName: string, suffix: 'Request' | 'Respons
 
 /**
  * 将 schema name 转为合法的 TypeScript 标识符。
- * - 中文 → 拼音首字母大写
+ * - 中文 → 拼音每个音节首字母大写（驼峰）
  * - «» → _
  * - 保留英文原始大小写
  * 例如：
- *   "响应«BackCardRes»" → "Xiangying_BackCardRes"
- *   "用户信息"           → "YonghuXinxi"
+ *   "响应«BackCardRes»" → "XiangYing_BackCardRes"
+ *   "分页"               → "FenYe"
  *   "ABCResponse"       → "ABCResponse"
  */
 export function sanitizeSchemaTypeName(raw: string): string {
-  // 先将 «» 替换为 _，去掉中文括号
-  let s = raw.replace(/[«»（）()]/g, '_');
+  let result = '';
 
-  // 用 pinyin-pro 将中文转为拼音（无声调）
-  // type: 'array' 返回每个字符的拼音，非中文字符原样返回
-  s = pinyin(s, { toneType: 'none', type: 'array' }).join('');
-
-  // 按 _ 分段，只首字母大写（不改动后续字符，保留英文原始大小写）
-  s = s
-    .split('_')
-    .filter(Boolean)
-    .map((seg) => (seg ? seg[0].toUpperCase() + seg.slice(1) : ''))
-    .join('_');
+  for (const ch of raw) {
+    // «» 和中文括号 → _
+    if ('«»（）()'.includes(ch)) {
+      result += '_';
+    } else if (/[一-鿿]/.test(ch)) {
+      // 中文字符 → 拼音首字母大写
+      const py = pinyin(ch, { toneType: 'none' });
+      result += py[0].toUpperCase() + py.slice(1);
+    } else {
+      // 英文/数字/其他 → 原样保留
+      result += ch;
+    }
+  }
 
   // 去掉所有非 ASCII 标识符字符（保留字母、数字、_）
-  s = s.replace(/[^A-Za-z0-9_]/g, '');
+  result = result.replace(/[^A-Za-z0-9_]/g, '');
 
   // 清理：连续 _ 合并，去掉首尾 _
-  s = s.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  result = result.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
 
-  return s || 'GeneratedType';
+  return result || 'GeneratedType';
 }

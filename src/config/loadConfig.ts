@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createJiti } from 'jiti'
-import type { ResolvedConfig, SwaggerTsConfig } from '../types.js'
+import type { ApiDocsFormat, ResolvedConfig, SwaggerTsConfig } from '../types.js'
 
 const CONFIG_FILES = ['.swaggerts.config.ts', '.swaggerts.config.js']
 
@@ -40,6 +40,8 @@ export async function loadConfig(cwd: string): Promise<{ configPath: string; con
   assertConfig(rawConfig)
 
   const docUrls = Array.isArray(rawConfig.docUrls) ? rawConfig.docUrls : [rawConfig.docUrls]
+  const apiDocsFormat: ApiDocsFormat = rawConfig.apiDocs?.format ?? 'html';
+  const defaultOutput = apiDocsFormat === 'markdown' ? 'api-docs.md' : 'api-docs.html';
   const config: ResolvedConfig = {
     ...rawConfig,
     docUrls,
@@ -50,6 +52,16 @@ export async function loadConfig(cwd: string): Promise<{ configPath: string; con
     fileNaming: rawConfig.fileNaming ?? 'path',
     flattenQueryParam: rawConfig.flattenQueryParam ?? false,
     mergeParams: rawConfig.mergeParams ?? false,
+    flattenOnGet: rawConfig.flattenOnGet ?? false,
+    apiDocs: {
+      enable: rawConfig.apiDocs?.enable ?? false,
+      output: rawConfig.apiDocs?.output ?? defaultOutput,
+      format: apiDocsFormat,
+      title: rawConfig.apiDocs?.title,
+      companyName: rawConfig.apiDocs?.companyName,
+      template: rawConfig.apiDocs?.template,
+      theme: rawConfig.apiDocs?.theme,
+    },
   }
 
   return { configPath, config }

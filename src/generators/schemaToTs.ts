@@ -1,4 +1,5 @@
 import type { OpenApiSchema } from '../types.js';
+import { sanitizeSchemaTypeName } from '../utils/naming.js';
 
 function formatPropertyName(name: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : JSON.stringify(name);
@@ -6,7 +7,8 @@ function formatPropertyName(name: string): string {
 
 function refToTypeName(ref: string): string {
   const parts = ref.split('/');
-  return parts[parts.length - 1] || 'unknown';
+  const raw = parts[parts.length - 1] || 'unknown';
+  return sanitizeSchemaTypeName(raw);
 }
 
 export function schemaToTs(schema?: OpenApiSchema): string {

@@ -1,4 +1,5 @@
 import type { OpenApiDocument, ParsedOperation, ResolvedConfig } from '../types.js';
+import { sanitizeSchemaTypeName } from '../utils/naming.js';
 import { schemaToTs, toTypePropertyName } from './schemaToTs.js';
 
 function formatDocLines(lines: string[]): string {
@@ -98,7 +99,7 @@ function renderOperationTypes(operation: ParsedOperation): string[] {
 
 function renderComponentSchemas(document: OpenApiDocument): string[] {
   return Object.entries(document.components?.schemas ?? {}).map(([name, schema]) => {
-    return renderComponentSchema(name, schema);
+    return renderComponentSchema(sanitizeSchemaTypeName(name), schema);
   });
 }
 
@@ -124,7 +125,7 @@ export function generateTypesFile(
       parts.push(`// Types from ${moduleName}`);
 
       for (const [name, schema] of Object.entries(document.components?.schemas ?? {})) {
-        parts.push(`/** @typedef {${toJSDocType(schemaToTs(schema as never))}} ${name} */`);
+        parts.push(`/** @typedef {${toJSDocType(schemaToTs(schema as never))}} ${sanitizeSchemaTypeName(name)} */`);
       }
     }
 

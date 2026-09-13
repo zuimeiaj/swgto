@@ -7,7 +7,7 @@ import type {
   ResolvedConfig,
 } from '../types.js';
 import { schemaToTs } from '../generators/schemaToTs.js';
-import { buildDefaultMethodName, buildTypeName, sanitizeIdentifier } from '../utils/naming.js';
+import { buildDefaultMethodName, buildTypeName, sanitizeIdentifier, sanitizeSchemaTypeName } from '../utils/naming.js';
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'] as const;
 
@@ -19,7 +19,7 @@ function collectReferencedTypeNames(schema?: OpenApiSchema, collected: Set<strin
   if (schema.$ref) {
     const typeName = schema.$ref.split('/').pop();
     if (typeName) {
-      collected.add(typeName);
+      collected.add(sanitizeSchemaTypeName(typeName));
     }
   }
 

@@ -10,7 +10,7 @@ function formatDocLines(lines: string[]): string {
   return ['/**', ...lines.map((line) => ` * ${line}`), ' */'].join('\n');
 }
 
-function buildSchemaDoc(schema?: { description?: string; example?: unknown }): string {
+function buildSchemaDocLines(schema?: { description?: string; example?: unknown }): string[] {
   const lines: string[] = [];
 
   if (schema?.description) {
@@ -21,7 +21,11 @@ function buildSchemaDoc(schema?: { description?: string; example?: unknown }): s
     lines.push(`@example ${JSON.stringify(schema.example)}`);
   }
 
-  return formatDocLines(lines);
+  return lines;
+}
+
+function buildSchemaDoc(schema?: { description?: string; example?: unknown }): string {
+  return formatDocLines(buildSchemaDocLines(schema));
 }
 
 function buildParameterDoc(
@@ -108,6 +112,45 @@ function toJSDocType(typeText: string): string {
   return typeText.replace(/;\s*/g, ', ').replace(/,\s*\}/g, ' }');
 }
 
+interface TypedSchema {
+  type?: string;
+  properties?: Record<string, unknown>;
+  required?: string[];
+  description?: string;
+  example?: unknown;
+}
+
+/**
+ * Objects are rendered as `@typedef {Object}` + `@property` tags so every field
+ * can carry its own description, mirroring the comments the TS output emits.
+ * Everything else stays a plain `@typedef {Type} Name`.
+ */
+function renderJsTypedef(name: string, schema: unknown): string {
+  const typed = schema as TypedSchema | undefined;
+  const properties = Object.entries(typed?.properties ?? {});
+
+  if (properties.length && (typed?.type === 'object' || typed?.properties)) {
+    const requiredSet = new Set(typed?.required ?? []);
+    const lines = [...buildSchemaDocLines(typed), `@typedef {Object} ${name}`];
+
+    for (const [key, value] of properties) {
+      const propName = toTypePropertyName(key);
+      const fieldDoc = buildSchemaDocLines(value as TypedSchema).join(' ');
+      const field = requiredSet.has(key) ? propName : `[${propName}]`;
+      lines.push(`@property {${toJSDocType(schemaToTs(value as never))}} ${field}${fieldDoc ? ` - ${fieldDoc}` : ''}`);
+    }
+
+    return formatDocLines(lines);
+  }
+
+  const doc = buildSchemaDocLines(typed);
+  const type = toJSDocType(schemaToTs(schema as never));
+
+  return doc.length
+    ? formatDocLines([...doc, `@typedef {${type}} ${name}`])
+    : `/** @typedef {${type}} ${name} */`;
+}
+
 export function generateTypesFile(
   documentMap: Map<string, OpenApiDocument>,
   operations: ParsedOperation[],
@@ -125,13 +168,13 @@ export function generateTypesFile(
       parts.push(`// Types from ${moduleName}`);
 
       for (const [name, schema] of Object.entries(document.components?.schemas ?? {})) {
-        parts.push(`/** @typedef {${toJSDocType(schemaToTs(schema as never))}} ${sanitizeSchemaTypeName(name)} */`);
+        parts.push(renderJsTypedef(sanitizeSchemaTypeName(name), schema));
       }
     }
 
     for (const operation of operations) {
       if (operation.responseTypeName) {
-        parts.push(`/** @typedef {${toJSDocType(schemaToTs(operation.responseSchema))}} ${operation.responseTypeName} */`);
+        parts.push(renderJsTypedef(operation.responseTypeName, operation.responseSchema));
       }
     }
 
